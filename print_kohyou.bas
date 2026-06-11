@@ -6,7 +6,7 @@ Sub showMenu()
     Menu.Show
 End Sub
 
-Sub print_run()
+Sub print_run(fullpage As Boolean)
 Attribute print_run.VB_ProcData.VB_Invoke_Func = "p\n14"
 '
 ' print_run Macro
@@ -17,33 +17,44 @@ Attribute print_run.VB_ProcData.VB_Invoke_Func = "p\n14"
         Exit Sub
     End If
     Sheets("Sheet1").Select
+    If fullpage Then
     ActiveWindow.SelectedSheets.PrintOut Copies:=1, Collate:=True, _
         IgnorePrintAreas:=False
+    Else
+        ActiveWindow.SelectedSheets.PrintOut From:=1, To:=1, Copies:=1, Collate _
+        :=True, IgnorePrintAreas:=False
+    End If
 End Sub
-Sub insert_data(rangeName As Variant, rs As Object)
+Sub insert_data(rangeName As Variant, rs As Object, even As Boolean)
+    If even Then
+        Range(rangeName + "_2") = rs(rangeName)
+    Else
+        Range(rangeName) = rs(rangeName)
+    End If
+End Sub
 
-    Range(rangeName) = rs(rangeName)
+
+
+Sub clear_data(switch As Long)
     
-End Sub
-Sub insert_page2(rangeName As Variant, rs As Object)
-    Range(rangeName + "_2") = rs(rangeName)
+    Dim name As Variant
+    If switch = 1 Then
+        For Each name In Names
+            Range(name) = ""
+        Next name
+        For Each name In Names2
+            Range(name) = ""
+        Next name
+    Else
+        For Each name In Names_2
+            Range(name) = ""
+        Next name
+        For Each name In Names2_2
+            Range(name) = ""
+        Next name
+    End If
 End Sub
 
-Sub clear_data()
-    Dim name As Variant
-    For Each name In Names
-        Range(name) = ""
-    Next name
-    For Each name In Names2
-        Range(name) = ""
-    Next name
-    For Each name In Names_2
-        Range(name) = ""
-    Next name
-    For Each name In Names2_2
-        Range(name) = ""
-    Next name
-End Sub
 
 
 
@@ -55,9 +66,7 @@ Sub go_ahead()
     
     Call preparation
 
-    'Names = Array("–¼", "ƒtƒŠƒKƒi", "ŠwZ–¼", "Šw”N", "‰j—Í", "•ÛŒìÒ–¼", "ZŠ", "—X•Ö”Ô†", "‹Ù‹}˜A—æ1", _
-    '              "‹Ù‹}˜A—æ2", "‹Ù‹}˜A—æ3", _
-    '              "”õl", "ƒ[ƒ‹ƒAƒhƒŒƒX", "‘O”N“xÅI‰j—Í")
+ 
     Names = Array("ID", "–¼", "ƒtƒŠƒKƒi", "ŠwZ–¼", "Šw”N", "‰j—Í", "•ÛŒìÒ–¼", "ZŠ", "—X•Ö”Ô†", "‹Ù‹}˜A—æ1", _
                   "‹Ù‹}˜A—æ2", "‹Ù‹}˜A—æ3", _
                   "”õl", "ƒ[ƒ‹ƒAƒhƒŒƒX")
@@ -70,20 +79,17 @@ Sub go_ahead()
 
     Names2 = Array("‰j—Í1", "‰j—Í2", "‰j—Í3")
     Names2_2 = Array("‰j—Í1_2", "‰j—Í2_2", "‰j—Í3_2")
-    counter = 1
+    
     For i = Menu.TextBoxFrom.Value To Menu.TextBoxTo.Value
-        If counter = 1 Then
-            Call clear_data
-        End If
-        Call print_specific_id(i)
-        If counter = 2 Then
-            counter = 0
-            Call print_run
-        End If
-        counter = counter + 1
+
+        Call clear_data(i Mod 2)
+        print_specific_id (i)
+  
+        
+
     Next i
     If counter = 2 Then
-        Call print_run
+        Call print_run(False)
     End If
 End Sub
 
@@ -102,30 +108,18 @@ End Sub
 Sub insert_all(rs As Object, id As Long)
     Dim name As Variant
 
-    If id Mod 2 = 0 Then
-        For Each name In Names
-            If (name <> "ZŠ") Or (Not Menu.CheckBox4Instructor.Value) Then
-           
-                    Call insert_page2(name, rs)
 
-            End If
-            
-        Next name
-        Range("‰j—Í" & rs("‰j—ÍC") & "_2") = "Z"
-    Else
-        For Each name In Names
-            If (name <> "ZŠ") Or (Not Menu.CheckBox4Instructor.Value) Then
-                Call insert_data(name, rs)
-            End If
-        Next name
-        Range("‰j—Í" & rs("‰j—ÍC")) = "Z"
-    End If
+    For Each name In Names
+        ' utŒü‚¯‚Ìê‡‚ÍZŠ‚Íˆóü‚µ‚È‚¢B(—X•Ö”Ô†‚Íˆóü‚·‚é--> ‚Ü‚ ‚¢‚¢‚©)
+        If (name <> "ZŠ") Or (Not Menu.CheckBox4Instructor.Value) Then
+            Call insert_data(name, rs, (id Mod 2))
+        End If
+    Next name
+    Range("‰j—Í" & rs("‰j—ÍC")) = "Z"
 
         
 End Sub
-Sub open_meibo(fname As String)
-     Workbooks.Open Filename:=fname
-End Sub
+
 Function last_row(column As Integer) As Integer
     last_row = Cells(Rows.Count, column).End(xlUp).row
 End Function
@@ -161,7 +155,8 @@ Sub preparation()
     If Menu.CheckBox4SkipPreparation.Value Then
         Exit Sub
     End If
-    Call open_meibo(Menu.TextBoxFileName.Value)
+    Workbooks.Open Filename:=Menu.TextBoxFileName.Value
+    
     ' column ‚ğ‘}“ü‚µheader ‚É "ID" ‚Æ‚µ‚Ä”Ô†‚ğU‚é
     Call insert_id
     Call change_sheet_name  ' sheet –¼‚ğ Sheet1 ‚É
@@ -176,6 +171,8 @@ Sub print_specific_id(id As Long)
     Dim rs As Object
     Dim SQLstr As String
     Dim row As Integer
+    Dim dataExists As Boolean
+    dataExists = False
     Set cn = CreateObject("ADODB.Connection")
     Set rs = CreateObject("ADODB.Recordset")
     cn.Provider = "Microsoft.ACE.OLEDB.12.0"
@@ -187,12 +184,16 @@ Sub print_specific_id(id As Long)
     rs.Open SQLstr, cn, adOpenKeyset, adLockReadOnly
     Do Until rs.EOF
         Call insert_all(rs, id)
+        dataExists = True
         rs.MoveNext
     Loop
     rs.Close
     Set rs = Nothing
     cn.Close
     Set cn = Nothing
+    If dataExists Then
+        Call print_run(True)
+    End If
 End Sub
 
 
