@@ -64,7 +64,7 @@ Sub go_ahead()
 
     Dim counter As Integer
     
-    Call preparation
+    Call preparation  ' google form からexport された excel をこのプログラムが走るように変更する。
 
  
     Names = Array("ID", "氏名", "フリガナ", "学校名", "学年", "泳力", "保護者氏名", "住所", "郵便番号", "緊急連絡先1", _
@@ -150,15 +150,25 @@ Sub change_header()
     Cells(1, 9).Value = "泳力"
     Cells(1, 10).Value = "備考"
 End Sub
+
+Function SheetExists(sheetName As String) As Boolean
+    Dim ws As Worksheet
+
+    On Error Resume Next
+    Set ws = Worksheets(sheetName)
+    On Error GoTo 0
+
+    SheetExists = Not ws Is Nothing
+End Function
 Sub preparation()
 
-    If Menu.CheckBox4SkipPreparation.Value Then
-        Exit Sub
-    End If
     Workbooks.Open Filename:=Menu.TextBoxFileName.Value
     
     ' column を挿入しheader に "ID" として番号を振る
-    Call insert_id
+    ''Call insert_id-- id は　google form上で入れるので不要
+    If SheetExists("Sheet1") Then
+        Exit Sub
+    End If
     Call change_sheet_name  ' sheet 名を Sheet1 に
     Call change_header
     Call change_eiryoku_description
